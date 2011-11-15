@@ -1,3 +1,4 @@
+
 /*
  * qemu_driver.c: core driver methods for managing qemu guests
  *
@@ -17,7 +18,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
- *
+ *#include "virnetdevtap.h"
+
  * Author: Daniel P. Berrange <berrange@redhat.com>
  */
 
@@ -2351,7 +2353,9 @@ cleanup:
 static int
 qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
                        virDomainObjPtr vm, const char *path,
-                       int compressed, const char *xmlin, unsigned int flags)
+                       int compressed, const char *xmlin, unsigned int flags,
+                       const char *replUUID, const char *replName, bool softSave
+    )
 {
     char *xml = NULL;
     struct qemud_save_header header;
@@ -2425,9 +2429,21 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
             virDomainDefFree(def);
             goto endjob;
         }
+        if (softSave){
+            memcpy(def->uuid, replUUID, sizeof(char) * 16);
+            def->name = replName;
+        }
         xml = virDomainDefFormat(def, (VIR_DOMAIN_XML_INACTIVE |
                                        VIR_DOMAIN_XML_SECURE));
     } else {
+        virDomainDefPtr def = vm->def;
+        if (softSave){
+            virDomainDef defHard;
+            memcpy(&defHard, def, sizeof(virDomainDef));
+            def = &defHard;
+            memcpy(def->uuid, replUUID, sizeof(char) * 16);
+            def->name = replName;
+        }
         xml = virDomainDefFormat(vm->def, (VIR_DOMAIN_XML_INACTIVE |
                                            VIR_DOMAIN_XML_SECURE));
     }
@@ -2520,15 +2536,19 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
     ret = 0;
 
     /* Shut it down */
-    qemuProcessStop(driver, vm, 0, VIR_DOMAIN_SHUTOFF_SAVED);
-    virDomainAuditStop(vm, "saved");
-    event = virDomainEventNewFromObj(vm,
-                                     VIR_DOMAIN_EVENT_STOPPED,
-                                     VIR_DOMAIN_EVENT_STOPPED_SAVED);
-    if (!vm->persistent) {
-        if (qemuDomainObjEndAsyncJob(driver, vm) > 0)
-            qemuDomainRemoveInactive(driver, vm);
+    if (softSave){
         vm = NULL;
+    }else{
+        qemuProcessStop(driver, vm, 0, VIR_DOMAIN_SHUTOFF_SAVED);
+        virDomainAuditStop(vm, "saved");
+        event = virDomainEventNewFromObj(vm,
+                                         VIR_DOMAIN_EVENT_STOPPED,
+                                         VIR_DOMAIN_EVENT_STOPPED_SAVED);
+        if (!vm->persistent) {
+            if (qemuDomainObjEndAsyncJob(driver, vm) > 0)
+                qemuDomainRemoveInactive(driver, vm);
+            vm = NULL;
+        }
     }
 
 endjob:
@@ -2576,8 +2596,9 @@ static bool qemudCompressProgramAvailable(enum qemud_save_formats compress)
 }
 
 static int
-qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
-                    unsigned int flags)
+qemuDomainSaveFlagsInternal(virDomainPtr dom, const char *path, const char *dxml,
+                            unsigned int flags, 
+                            const char *replUUID, const char *replName, bool softSave)
 {
     struct qemud_driver *driver = dom->conn->privateData;
     int compressed;
@@ -2624,7 +2645,7 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
     }
 
     ret = qemuDomainSaveInternal(driver, dom, vm, path, compressed,
-                                 dxml, flags);
+                                 dxml, flags, replUUID, replName, softSave);
     vm = NULL;
 
 cleanup:
@@ -2636,9 +2657,23 @@ cleanup:
 }
 
 static int
+qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
+                    unsigned int flags){
+    return qemuDomainSaveFlagsInternal(dom, path, dxml, flags, NULL, NULL, false);
+}
+
+
+static int
 qemuDomainSave(virDomainPtr dom, const char *path)
 {
     return qemuDomainSaveFlags(dom, path, NULL, 0);
+}
+
+static int
+qemuDomainLiveSave(virDomainPtr dom, const char *path, const char *replUUID, 
+                   const char *replName)
+{
+    return qemuDomainSaveFlagsInternal(dom, path, NULL, 0, replUUID, replName, true);
 }
 
 static char *
@@ -2695,7 +2730,7 @@ qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
 
     compressed = QEMUD_SAVE_FORMAT_RAW;
     ret = qemuDomainSaveInternal(driver, dom, vm, name, compressed,
-                                 NULL, flags);
+                                 NULL, flags, NULL, NULL, false);
     vm = NULL;
 
 cleanup:
@@ -10351,6 +10386,7 @@ static virDriver qemuDriver = {
     .domainGetControlInfo = qemuDomainGetControlInfo, /* 0.9.3 */
     .domainSave = qemuDomainSave, /* 0.2.0 */
     .domainSaveFlags = qemuDomainSaveFlags, /* 0.9.4 */
+    .domainLiveSave = qemuDomainLiveSave, /* blanks! */
     .domainRestore = qemuDomainRestore, /* 0.2.0 */
     .domainRestoreFlags = qemuDomainRestoreFlags, /* 0.9.4 */
     .domainSaveImageGetXMLDesc = qemuDomainSaveImageGetXMLDesc, /* 0.9.4 */

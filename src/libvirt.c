@@ -2377,6 +2377,75 @@ error:
 }
 
 /**
+ * virDomainLiveSave:
+ * @domain: a domain object
+ * @to: path for the output file
+ * @replUUID: new UUID for the newly cloned domain
+ * @replName: new Name for the newly cloned domain
+ *
+ * This method will suspend a domain and save its memory contents to
+ * a file on disk. After the call, if successful, the domain is not
+ * listed as running anymore (this ends the life of a transient domain).
+ * Use virDomainRestore() to restore a domain after saving.
+ *
+ * See virDomainSaveFlags() for more control.  Also, a save file can
+ * be inspected or modified slightly with virDomainSaveImageGetXMLDesc()
+ * and virDomainSaveImageDefineXML().
+ *
+ * Returns 0 in case of success and -1 in case of failure.
+ */
+int
+virDomainLiveSave(virDomainPtr domain, const char *to, const char *replUUID, const char *replName)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "to=%s", to);
+
+    virResetLastError();
+    
+    if (!VIR_IS_CONNECTED_DOMAIN(domain)) {
+        virLibDomainError(VIR_ERR_INVALID_DOMAIN, __FUNCTION__);
+        virDispatchError(NULL);
+        return -1;
+    }
+    if (domain->conn->flags & VIR_CONNECT_RO) {
+        virLibDomainError(VIR_ERR_OPERATION_DENIED, __FUNCTION__);
+        goto error;
+    }
+    conn = domain->conn;
+    if (to == NULL) {
+        virLibDomainError(VIR_ERR_INVALID_ARG, __FUNCTION__);
+        goto error;
+    }
+
+    if (conn->driver->domainLiveSave) {
+        int ret;
+        char *absolute_to;
+
+        /* We must absolutize the file path as the save is done out of process */
+        if (virFileAbsPath(to, &absolute_to) < 0) {
+            virLibConnError(VIR_ERR_INTERNAL_ERROR,
+                            _("could not build absolute output file path"));
+            goto error;
+        }
+
+        ret = conn->driver->domainLiveSave(domain, absolute_to, replUUID, replName);
+
+        VIR_FREE(absolute_to);
+
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virLibConnError(VIR_ERR_NO_SUPPORT, conn->driver->name);
+
+error:
+    virDispatchError(domain->conn);
+    return -1;
+}
+
+/**
  * virDomainSaveFlags:
  * @domain: a domain object
  * @to: path for the output file

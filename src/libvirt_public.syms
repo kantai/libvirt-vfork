@@ -34,6 +34,7 @@ LIBVIRT_0.0.3 {
 	virDomainRestore;
 	virDomainResume;
 	virDomainSave;
+	virDomainLiveSave;
 	virDomainSetMaxMemory;
 	virDomainShutdown;
 	virDomainSuspend;

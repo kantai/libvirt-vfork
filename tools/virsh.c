@@ -2186,6 +2186,60 @@ cleanup:
 /*
  * "save" command
  */
+static const vshCmdInfo info_livesave[] = {
+    {"help", N_("live save a domain state to a file")},
+    {"desc", N_("Live save the RAM state of a running domain.")},
+    {NULL, NULL}
+};
+
+static const vshCmdOptDef opts_livesave[] = {
+    {"domain", VSH_OT_DATA, VSH_OFLAG_REQ, N_("domain name, id or uuid")},
+    {"file", VSH_OT_DATA, VSH_OFLAG_REQ, N_("where to save the data")},
+    {"replUUID", VSH_OT_DATA, VSH_OFLAG_REQ,
+     N_("replace UUID for the live save")},
+    {"replName", VSH_OT_DATA, VSH_OFLAG_REQ, N_("replace Name for the live save")},
+    {NULL, 0, 0, NULL}
+};
+
+static bool
+cmdLiveSave(vshControl *ctl, const vshCmd *cmd){
+    virDomainPtr dom;
+    const char *name = NULL;
+    const char *to = NULL;
+    bool ret = false;
+
+    const char *replUUID = NULL;
+    const char *replName = NULL;
+
+    if (!vshConnectionUsability(ctl, ctl->conn))
+        return false;
+
+    if (vshCommandOptString(cmd, "file", &to) <= 0)
+        return false;
+    if (vshCommandOptString(cmd, "replUUID", &replUUID) <= 0)
+        return false;
+    if (vshCommandOptString(cmd, "replName", &replName) <= 0)
+        return false;
+
+    if (!(dom = vshCommandOptDomain(ctl, cmd, &name)))
+        return false;
+
+    if ( virDomainLiveSave(dom, to, replUUID, replName) < 0) {
+        vshError(ctl, _("Failed to live save domain %s to %s"), name, to);
+        goto cleanup;
+    }
+
+    vshPrint(ctl, _("Domain %s live saved to %s\n"), name, to);
+    ret = true;
+
+cleanup:
+    virDomainFree(dom);
+    return ret;
+}
+
+/*
+ * "save" command
+ */
 static const vshCmdInfo info_save[] = {
     {"help", N_("save a domain state to a file")},
     {"desc", N_("Save the RAM state of a running domain.")},
@@ -13567,6 +13621,7 @@ static const vshCmdDef domManagementCmds[] = {
     {"restore", cmdRestore, opts_restore, info_restore, 0},
     {"resume", cmdResume, opts_resume, info_resume, 0},
     {"save", cmdSave, opts_save, info_save, 0},
+    {"livesave", cmdLiveSave, opts_livesave, info_livesave, 0},
     {"save-image-define", cmdSaveImageDefine, opts_save_image_define,
      info_save_image_define, 0},
     {"save-image-dumpxml", cmdSaveImageDumpxml, opts_save_image_dumpxml,

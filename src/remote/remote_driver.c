@@ -4328,6 +4328,7 @@ static virDriver remote_driver = {
     .domainGetState = remoteDomainGetState, /* 0.9.2 */
     .domainGetControlInfo = remoteDomainGetControlInfo, /* 0.9.3 */
     .domainSave = remoteDomainSave, /* 0.3.0 */
+    .domainLiveSave = remoteDomainLiveSave, /* 0.3.0 */
     .domainSaveFlags = remoteDomainSaveFlags, /* 0.9.4 */
     .domainRestore = remoteDomainRestore, /* 0.3.0 */
     .domainRestoreFlags = remoteDomainRestoreFlags, /* 0.9.4 */

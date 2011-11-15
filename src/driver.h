@@ -179,6 +179,11 @@ typedef int
                                          virDomainControlInfoPtr info,
                                          unsigned int flags);
 typedef int
+        (*virDrvDomainLiveSave)		(virDomainPtr domain,
+                                         const char *to,
+                                         const char *replUUID,
+                                         const char *replName);
+typedef int
         (*virDrvDomainSave)		(virDomainPtr domain,
                                          const char *to);
 typedef int
@@ -770,6 +775,7 @@ struct _virDriver {
     virDrvDomainGetState	domainGetState;
     virDrvDomainGetControlInfo  domainGetControlInfo;
     virDrvDomainSave		domainSave;
+    virDrvDomainLiveSave	domainLiveSave;
     virDrvDomainSaveFlags	domainSaveFlags;
     virDrvDomainRestore		domainRestore;
     virDrvDomainRestoreFlags	domainRestoreFlags;

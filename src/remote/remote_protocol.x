@@ -753,6 +753,13 @@ struct remote_domain_save_flags_args {
     unsigned int flags;
 };
 
+struct remote_domain_live_save_args {
+    remote_nonnull_domain dom;
+    remote_nonnull_string to;
+    remote_nonnull_string replUUID;
+    remote_nonnull_string replName;
+};
+
 struct remote_domain_restore_args {
     remote_nonnull_string from;
 };
@@ -2509,8 +2516,8 @@ enum remote_procedure {
 
     REMOTE_PROC_DOMAIN_EVENT_BLOCK_JOB = 241, /* skipgen skipgen */
     REMOTE_PROC_DOMAIN_MIGRATE_GET_MAX_SPEED = 242, /* autogen autogen */
-    REMOTE_PROC_DOMAIN_BLOCK_STATS_FLAGS = 243 /* skipgen skipgen */
-
+    REMOTE_PROC_DOMAIN_BLOCK_STATS_FLAGS = 243, /* skipgen skipgen */
+    REMOTE_PROC_DOMAIN_LIVE_SAVE = 244 /* autogen autogen */
     /*
      * Notice how the entries are grouped in sets of 10 ?
      * Nice isn't it. Please keep it this way when adding more.
