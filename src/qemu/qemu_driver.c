@@ -2537,6 +2537,7 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
 
     /* Shut it down */
     if (softSave){
+        virDomainObjUnlock(vm);
         vm = NULL;
     }else{
         qemuProcessStop(driver, vm, 0, VIR_DOMAIN_SHUTOFF_SAVED);
