@@ -1061,6 +1061,10 @@ typedef enum {
 
 int                     virDomainSave           (virDomainPtr domain,
                                                  const char *to);
+int                     virDomainLiveSave       (virDomainPtr domain,
+                                                 const char *to,
+                                                 const char *replUUID,
+                                                 const char *replName);
 int                     virDomainSaveFlags      (virDomainPtr domain,
                                                  const char *to,
                                                  const char *dxml,
