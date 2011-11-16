@@ -2444,7 +2444,7 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
             memcpy(def->uuid, replUUID, sizeof(char) * 16);
             def->name = replName;
         }
-        xml = virDomainDefFormat(vm->def, (VIR_DOMAIN_XML_INACTIVE |
+        xml = virDomainDefFormat(def, (VIR_DOMAIN_XML_INACTIVE |
                                            VIR_DOMAIN_XML_SECURE));
     }
     if (!xml) {
@@ -2538,7 +2538,8 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
     /* Shut it down */
     if (softSave){
         virDomainObjUnlock(vm);
-        vm = NULL;
+        if (qemuDomainObjEndAsyncJob(driver, vm) == 0)
+            vm = NULL;
     }else{
         qemuProcessStop(driver, vm, 0, VIR_DOMAIN_SHUTOFF_SAVED);
         virDomainAuditStop(vm, "saved");
