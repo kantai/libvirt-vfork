@@ -756,7 +756,7 @@ struct remote_domain_save_flags_args {
 struct remote_domain_live_save_args {
     remote_nonnull_domain dom;
     remote_nonnull_string to;
-    remote_nonnull_string replUUID;
+    remote_uuid replUUID;
     remote_nonnull_string replName;
 };
 

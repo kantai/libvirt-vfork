@@ -181,7 +181,7 @@ typedef int
 typedef int
         (*virDrvDomainLiveSave)		(virDomainPtr domain,
                                          const char *to,
-                                         const char *replUUID,
+                                         const unsigned char *replUUID,
                                          const char *replName);
 typedef int
         (*virDrvDomainSave)		(virDomainPtr domain,

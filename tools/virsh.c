@@ -59,6 +59,7 @@
 #include "threads.h"
 #include "command.h"
 #include "virkeycode.h"
+#include "uuid.h"
 
 static char *progname;
 
@@ -2208,23 +2209,28 @@ cmdLiveSave(vshControl *ctl, const vshCmd *cmd){
     const char *to = NULL;
     bool ret = false;
 
-    const char *replUUID = NULL;
+    const char *replUUIDStr = NULL;
     const char *replName = NULL;
+    unsigned char replUUID[VIR_UUID_BUFLEN];
 
     if (!vshConnectionUsability(ctl, ctl->conn))
         return false;
 
     if (vshCommandOptString(cmd, "file", &to) <= 0)
         return false;
-    if (vshCommandOptString(cmd, "replUUID", &replUUID) <= 0)
+    if (vshCommandOptString(cmd, "replUUID", &replUUIDStr) <= 0)
         return false;
+    if (virUUIDParse(replUUIDStr, replUUID) < 0){
+        return false;
+    }
+
     if (vshCommandOptString(cmd, "replName", &replName) <= 0)
         return false;
 
     if (!(dom = vshCommandOptDomain(ctl, cmd, &name)))
         return false;
 
-    if ( virDomainLiveSave(dom, to, replUUID, replName) < 0) {
+    if ( virDomainLiveSave(dom, to, &replUUID, replName) < 0) {
         vshError(ctl, _("Failed to live save domain %s to %s"), name, to);
         goto cleanup;
     }

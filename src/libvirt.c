@@ -2395,7 +2395,7 @@ error:
  * Returns 0 in case of success and -1 in case of failure.
  */
 int
-virDomainLiveSave(virDomainPtr domain, const char *to, const char *replUUID, const char *replName)
+virDomainLiveSave(virDomainPtr domain, const char *to, const unsigned char *replUUID, const char *replName)
 {
     virConnectPtr conn;
 

@@ -2354,7 +2354,7 @@ static int
 qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
                        virDomainObjPtr vm, const char *path,
                        int compressed, const char *xmlin, unsigned int flags,
-                       const char *replUUID, const char *replName, bool softSave
+                       const unsigned char *replUUID, const char *replName, bool softSave
     )
 {
     char *xml = NULL;
@@ -2600,7 +2600,7 @@ static bool qemudCompressProgramAvailable(enum qemud_save_formats compress)
 static int
 qemuDomainSaveFlagsInternal(virDomainPtr dom, const char *path, const char *dxml,
                             unsigned int flags, 
-                            const char *replUUID, const char *replName, bool softSave)
+                            const unsigned char *replUUID, const char *replName, bool softSave)
 {
     struct qemud_driver *driver = dom->conn->privateData;
     int compressed;
@@ -2672,7 +2672,7 @@ qemuDomainSave(virDomainPtr dom, const char *path)
 }
 
 static int
-qemuDomainLiveSave(virDomainPtr dom, const char *path, const char *replUUID, 
+qemuDomainLiveSave(virDomainPtr dom, const char *path, const unsigned char *replUUID, 
                    const char *replName)
 {
     return qemuDomainSaveFlagsInternal(dom, path, NULL, 0, replUUID, replName, true);
