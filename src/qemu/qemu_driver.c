@@ -2537,9 +2537,11 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
 
     /* Shut it down */
     if (softSave){
-        virDomainObjUnlock(vm);
-        if (qemuDomainObjEndAsyncJob(driver, vm) == 0)
-            vm = NULL;
+        rc = qemuProcessStartCPUs(driver, vm, dom->conn,
+                                  VIR_DOMAIN_RUNNING_SAVE_CANCELED,
+                                  QEMU_ASYNC_JOB_SAVE);
+        if (rc < 0)
+            VIR_WARN("Unable to resume guest CPUs after live save");
     }else{
         qemuProcessStop(driver, vm, 0, VIR_DOMAIN_SHUTOFF_SAVED);
         virDomainAuditStop(vm, "saved");
