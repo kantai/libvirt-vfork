@@ -174,17 +174,14 @@ int main(int argc, char *argv[])
 	  length = readline(i, buffer, BUFFER_SIZE);
 	  //if there actually is a message				
 	  if(length != 0){
-	    fprintf(stderr, "got: %s\n", buffer);
+             fprintf(stderr, "got: %s\n", buffer);
             
 	    //this will eventually be received as a key from the guest OS
 	    //i.e. take buffer, lookup in a table from keys to UUIDS (EG below)
-            char* termStr = strchr(buffer, '\r');
-            char* domainName = (char*) malloc( termStr - buffer + 1 );
-            strncpy(domainName,buffer, termStr - buffer);
+            //char* termStr = strchr(buffer, '\r');
 	    virDomainPtr dom;
             
-	    dom = virDomainLookupByName(conn, domainName);
-            free(domainName);
+	    dom = virDomainLookupByName(conn, buffer);
 
             unsigned char replUUID[VIR_UUID_BUFLEN];
             virGenerateUUID(replUUID);
@@ -192,6 +189,8 @@ int main(int argc, char *argv[])
 	    //take domainName, add delimiter and then counter for number of times it's been forked
 	    virDomainLiveSave(dom, "/tmp/vm_1.1",
 			      replUUID, "vm_1.1");
+
+            writeline(i, "forked\n", 7);
 
 	    virDomainRestore(conn,"/tmp/vm_1.1");
 
