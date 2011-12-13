@@ -2431,6 +2431,9 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
         }
         if (softSave){
             memcpy(def->uuid, replUUID, sizeof(char) * 16);
+            // the following is a bug. I know it's a bug, you know it's a bug.
+            // It'll be fixed also it is repeated several lines down.
+            def->nets[0]->mac[5]++;
             def->name = replName;
         }
         xml = virDomainDefFormat(def, (VIR_DOMAIN_XML_INACTIVE |
@@ -2442,6 +2445,7 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
             memcpy(&defHard, def, sizeof(virDomainDef));
             def = &defHard;
             memcpy(def->uuid, replUUID, sizeof(char) * 16);
+            def->nets[0]->mac[5]++;
             def->name = replName;
         }
         xml = virDomainDefFormat(def, (VIR_DOMAIN_XML_INACTIVE |

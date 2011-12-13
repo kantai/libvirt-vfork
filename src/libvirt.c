@@ -105,6 +105,10 @@ static int virStateDriverTabCount = 0;
 #endif
 static int initialized = 0;
 
+int virGenerateUUID(unsigned char *uuid){
+    return virUUIDGenerate(uuid);
+}
+
 #if defined(POLKIT_AUTH)
 static int virConnectAuthGainPolkit(const char *privilege) {
     const char *const args[] = {

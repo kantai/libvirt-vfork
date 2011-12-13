@@ -488,6 +488,7 @@ LIBVIRT_0.9.5 {
         virDomainSnapshotGetConnect;
         virDomainSnapshotGetDomain;
         virDomainSnapshotGetName;
+	virGenerateUUID;
 } LIBVIRT_0.9.4;
 
 # .... define new API here using predicted next version number ....

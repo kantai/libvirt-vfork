@@ -11,8 +11,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <libvirt/libvirt.h>
-
 
 
 #define LISTEN_QUEUE_LENGTH 8
@@ -22,19 +22,23 @@ struct sockaddr *address;
 struct socklen_t *address_len;
 
 
-//read the line from the users
+// read at most max_len into buf (null terminated)
+// buf should be a memory allocation of size >= max_len
+// terminate at first occurrence of \r or \n
 ssize_t readline(int fd, char *buf, size_t max_len)
 {
   char c, *p;
   
-  for (p = buf, c = 0; p < buf + max_len && c != '\n';) {
+  for (p = buf, c = 0;  p < buf + max_len - 1 && c != '\n';) {
     switch (read(fd, &c, 1)) {
     case 1:  /* read a byte */
-      *p++ = c;
-      break;
+        if(c == '\n' || c == '\r')
+            goto finish;
+        *p++ = c;
+        break;
     case 0:  /* read EOF    */
-      return p - buf;
-      break;
+        goto finish;
+        break;
     case -1: /* error       */
       if (errno == EINTR) {
 	continue;
@@ -45,7 +49,8 @@ ssize_t readline(int fd, char *buf, size_t max_len)
       break;
     }
   }
-  
+finish:
+  *p = 0;
   return p - buf;
 }
 
@@ -132,7 +137,7 @@ int main(int argc, char *argv[])
   FD_ZERO(&fds);
   FD_ZERO(&ret);
   FD_SET(listenfd,&ret);
-  int i,j;
+  int i;
   for (;;) {
     fds = ret;
     int rc = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
@@ -170,19 +175,23 @@ int main(int argc, char *argv[])
 	  //if there actually is a message				
 	  if(length != 0){
 	    fprintf(stderr, "got: %s\n", buffer);
-
+            
 	    //this will eventually be received as a key from the guest OS
 	    //i.e. take buffer, lookup in a table from keys to UUIDS (EG below)
-	    char* domainName = "vm_1";
+            char* termStr = strchr(buffer, '\r');
+            char* domainName = (char*) malloc( termStr - buffer + 1 );
+            strncpy(domainName,buffer, termStr - buffer);
 	    virDomainPtr dom;
-
+            
 	    dom = virDomainLookupByName(conn, domainName);
+            free(domainName);
 
-	    unsigned char replUUID = "00311636-7767-71d2-e94a-26e7b8bad250";
+            unsigned char replUUID[VIR_UUID_BUFLEN];
+            virGenerateUUID(replUUID);
 
 	    //take domainName, add delimiter and then counter for number of times it's been forked
 	    virDomainLiveSave(dom, "/tmp/vm_1.1",
-			      &replUUID, "vm_1.1");
+			      replUUID, "vm_1.1");
 
 	    virDomainRestore(conn,"/tmp/vm_1.1");
 

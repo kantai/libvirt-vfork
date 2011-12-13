@@ -15,6 +15,7 @@
 .git-module-status
 .lvimrc
 .sc-start-sc_*
+/server/server
 /ABOUT-NLS
 /COPYING
 /ChangeLog
