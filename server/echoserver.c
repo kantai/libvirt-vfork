@@ -194,6 +194,8 @@ int main(int argc, char *argv[])
 
 	    virDomainRestore(conn,"/tmp/vm_1.1");
 
+            //writeline(i,"!\n", 2);
+
 	    /*
 	    char *domainUUID = "00311636-7767-71d2-e94a-26e7b8bad250";
 	    virDomainPtr dom;
