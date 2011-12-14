@@ -2433,15 +2433,15 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
             memcpy(def->uuid, replUUID, sizeof(char) * 16);
             // the following is a bug. I know it's a bug, you know it's a bug.
             // It'll be fixed also it is repeated several lines down.
-//            def->nets[0] = 0;
-//            def->nnets = 0;
-            def->nets[0]->mac[5]++;
+            //def->nets[0]->mac[5]++;
+            def->disks[0]->src = "/tmp/disk-foo.qcow2";
             def->name = replName;
         }
         xml = virDomainDefFormat(def, (VIR_DOMAIN_XML_INACTIVE |
                                        VIR_DOMAIN_XML_SECURE));
     } else {
         virDomainDefPtr def = vm->def;
+        char* old = def->disks[0]->src;
         if (softSave){
             virDomainDef defHard;
             memcpy(&defHard, def, sizeof(virDomainDef));
@@ -2449,11 +2449,15 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
             memcpy(def->uuid, replUUID, sizeof(char) * 16);
 //            def->nets[0] = 0;
 //            def->nnets = 0;
-            def->nets[0]->mac[5]++;
+//            def->nets[0]->mac[5]++;
+            def->disks[0]->src = "/tmp/disk-foo.qcow2";
             def->name = replName;
         }
         xml = virDomainDefFormat(def, (VIR_DOMAIN_XML_INACTIVE |
                                            VIR_DOMAIN_XML_SECURE));
+        if(softSave){
+            def->disks[0]->src = old;
+        }
     }
     if (!xml) {
         qemuReportError(VIR_ERR_OPERATION_FAILED,
