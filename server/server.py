@@ -22,7 +22,7 @@ def serve_loop():
             print "forking %s" % domain
             dom.liveSave("/tmp/vm1-1", nuu, domain + ".1")
             print "copying..."
-            shutil.copyfile(filename, "/tmp/disk-foo.qcow2")
+            subprocess.call(['qemu-img','create','-f', 'qcow2', '-b',filename,'/tmp/disk-foo.qcow2'])
             print "restoring..."
             conn.restore("/tmp/vm1-1")
             print "scribbling..."
