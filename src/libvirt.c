@@ -105,6 +105,15 @@ static int virStateDriverTabCount = 0;
 #endif
 static int initialized = 0;
 
+/**
+ * virGenerateUUID:
+ * @uuid: pointer to a memory location to store the generated
+ * uuid.
+ *
+ * This generates a pseudorandom UUID in the memory location specified.
+ *
+ * Returns 0 in case of success and -1 in case of failure.
+ */
 int virGenerateUUID(unsigned char *uuid){
     return virUUIDGenerate(uuid);
 }
@@ -2386,6 +2395,7 @@ error:
  * @to: path for the output file
  * @replUUID: new UUID for the newly cloned domain
  * @replName: new Name for the newly cloned domain
+ * @replPrimaryDisk: new path for the primary disk of the cloned domain
  *
  * This method will suspend a domain and save its memory contents to
  * a file on disk. After the call, if successful, the domain is not
@@ -2399,7 +2409,7 @@ error:
  * Returns 0 in case of success and -1 in case of failure.
  */
 int
-virDomainLiveSave(virDomainPtr domain, const char *to, const unsigned char *replUUID, const char *replName)
+virDomainLiveSave(virDomainPtr domain, const char *to, const unsigned char *replUUID, const char *replName, const char *replPrimaryDisk)
 {
     virConnectPtr conn;
 
@@ -2433,7 +2443,7 @@ virDomainLiveSave(virDomainPtr domain, const char *to, const unsigned char *repl
             goto error;
         }
 
-        ret = conn->driver->domainLiveSave(domain, absolute_to, replUUID, replName);
+        ret = conn->driver->domainLiveSave(domain, absolute_to, replUUID, replName, replPrimaryDisk);
 
         VIR_FREE(absolute_to);
 

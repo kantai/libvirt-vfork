@@ -2199,6 +2199,7 @@ static const vshCmdOptDef opts_livesave[] = {
     {"replUUID", VSH_OT_DATA, VSH_OFLAG_REQ,
      N_("replace UUID for the live save")},
     {"replName", VSH_OT_DATA, VSH_OFLAG_REQ, N_("replace Name for the live save")},
+    {"replPrimaryDisk", VSH_OT_DATA, VSH_OFLAG_REQ, N_("replace disk name for the live save")},
     {NULL, 0, 0, NULL}
 };
 
@@ -2211,6 +2212,7 @@ cmdLiveSave(vshControl *ctl, const vshCmd *cmd){
 
     const char *replUUIDStr = NULL;
     const char *replName = NULL;
+    const char *replPrimaryDisk = NULL;
     unsigned char replUUID[VIR_UUID_BUFLEN];
 
     if (!vshConnectionUsability(ctl, ctl->conn))
@@ -2226,11 +2228,13 @@ cmdLiveSave(vshControl *ctl, const vshCmd *cmd){
 
     if (vshCommandOptString(cmd, "replName", &replName) <= 0)
         return false;
+    if (vshCommandOptString(cmd, "replPrimaryDisk", &replPrimaryDisk) <= 0)
+        return false;
 
     if (!(dom = vshCommandOptDomain(ctl, cmd, &name)))
         return false;
 
-    if ( virDomainLiveSave(dom, to, &replUUID, replName) < 0) {
+    if ( virDomainLiveSave(dom, to, &replUUID, replName, replPrimaryDisk) < 0) {
         vshError(ctl, _("Failed to live save domain %s to %s"), name, to);
         goto cleanup;
     }

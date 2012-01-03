@@ -1064,7 +1064,8 @@ int                     virDomainSave           (virDomainPtr domain,
 int                     virDomainLiveSave       (virDomainPtr domain,
                                                  const char *to,
                                                  const unsigned char *replUUID,
-                                                 const char *replName);
+                                                 const char *replName,
+                                                 const char *replPrimaryDisk);
 int virGenerateUUID (unsigned char * uuid) ;
 int                     virDomainSaveFlags      (virDomainPtr domain,
                                                  const char *to,
