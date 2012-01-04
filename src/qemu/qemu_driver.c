@@ -2354,8 +2354,9 @@ static int
 qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
                        virDomainObjPtr vm, const char *path,
                        int compressed, const char *xmlin, unsigned int flags,
-                       const unsigned char *replUUID, const char *replName, bool softSave
-    )
+                       const unsigned char *replUUID, const char *replName,
+                       const char *replPrimaryDisk,
+                       bool softSave)
 {
     char *xml = NULL;
     struct qemud_save_header header;
@@ -2434,7 +2435,7 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
             // the following is a bug. I know it's a bug, you know it's a bug.
             // It'll be fixed also it is repeated several lines down.
             //def->nets[0]->mac[5]++;
-            def->disks[0]->src = "/tmp/disk-foo.qcow2";
+            def->disks[0]->src = replPrimaryDisk;
             def->name = replName;
         }
         xml = virDomainDefFormat(def, (VIR_DOMAIN_XML_INACTIVE |
@@ -2447,10 +2448,7 @@ qemuDomainSaveInternal(struct qemud_driver *driver, virDomainPtr dom,
             memcpy(&defHard, def, sizeof(virDomainDef));
             def = &defHard;
             memcpy(def->uuid, replUUID, sizeof(char) * 16);
-//            def->nets[0] = 0;
-//            def->nnets = 0;
-//            def->nets[0]->mac[5]++;
-            def->disks[0]->src = "/tmp/disk-foo.qcow2";
+            def->disks[0]->src = replPrimaryDisk;
             def->name = replName;
         }
         xml = virDomainDefFormat(def, (VIR_DOMAIN_XML_INACTIVE |
@@ -2614,7 +2612,8 @@ static bool qemudCompressProgramAvailable(enum qemud_save_formats compress)
 static int
 qemuDomainSaveFlagsInternal(virDomainPtr dom, const char *path, const char *dxml,
                             unsigned int flags, 
-                            const unsigned char *replUUID, const char *replName, bool softSave)
+                            const unsigned char *replUUID, const char *replName,
+                            const unsigned char *replPrimaryDisk, bool softSave)
 {
     struct qemud_driver *driver = dom->conn->privateData;
     int compressed;
@@ -2661,7 +2660,7 @@ qemuDomainSaveFlagsInternal(virDomainPtr dom, const char *path, const char *dxml
     }
 
     ret = qemuDomainSaveInternal(driver, dom, vm, path, compressed,
-                                 dxml, flags, replUUID, replName, softSave);
+                                 dxml, flags, replUUID, replName, replPrimaryDisk,softSave);
     vm = NULL;
 
 cleanup:
@@ -2675,7 +2674,7 @@ cleanup:
 static int
 qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
                     unsigned int flags){
-    return qemuDomainSaveFlagsInternal(dom, path, dxml, flags, NULL, NULL, false);
+    return qemuDomainSaveFlagsInternal(dom, path, dxml, flags, NULL, NULL, NULL, false);
 }
 
 
@@ -2687,9 +2686,9 @@ qemuDomainSave(virDomainPtr dom, const char *path)
 
 static int
 qemuDomainLiveSave(virDomainPtr dom, const char *path, const unsigned char *replUUID, 
-                   const char *replName)
+                   const char *replName, const char *replPrimaryDisk)
 {
-    return qemuDomainSaveFlagsInternal(dom, path, NULL, 0, replUUID, replName, true);
+    return qemuDomainSaveFlagsInternal(dom, path, NULL, 0, replUUID, replName, replPrimaryDisk, true);
 }
 
 static char *
@@ -2746,7 +2745,7 @@ qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
 
     compressed = QEMUD_SAVE_FORMAT_RAW;
     ret = qemuDomainSaveInternal(driver, dom, vm, name, compressed,
-                                 NULL, flags, NULL, NULL, false);
+                                 NULL, flags, NULL, NULL, NULL, false);
     vm = NULL;
 
 cleanup:

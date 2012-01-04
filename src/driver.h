@@ -182,7 +182,8 @@ typedef int
         (*virDrvDomainLiveSave)		(virDomainPtr domain,
                                          const char *to,
                                          const unsigned char *replUUID,
-                                         const char *replName);
+                                         const char *replName,
+                                         const char *replPrimaryDisk);
 typedef int
         (*virDrvDomainSave)		(virDomainPtr domain,
                                          const char *to);

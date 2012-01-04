@@ -758,6 +758,7 @@ struct remote_domain_live_save_args {
     remote_nonnull_string to;
     remote_uuid replUUID;
     remote_nonnull_string replName;
+    remote_nonnull_string replPrimaryDisk;
 };
 
 struct remote_domain_restore_args {
