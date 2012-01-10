@@ -2,6 +2,7 @@ import libvirt
 import shutil
 import subprocess
 from xml.dom.minidom import parseString
+from random import randint
 import os
 
 conn = libvirt.open(None)
@@ -28,19 +29,31 @@ class DomainReader(object):
         print cmd
         if cmd.startswith('fork'):
             self.children_counter += 1
-            do_fork(self, cmd, self.children_counter)
+            do_fork(self, self.dom, self.children_counter)
     def logPrefix(self):
         return "reader"
 
-def do_fork(parent_reader, str_command, child_count):
-    broken = str_command.split()
-    domain = broken[1]            
+first_hex_digit = ['2','6','a','e']
+def get_mac_from_id(id_num):
+    first = hex(randint(0,16))[2:3] + first_hex_digit[randint(0,3)]
+    mac_addr = "%s:%02x:%02x:%02x:%02x:%02x" % (first,
+                                                randint(0,255),
+                                                randint(0,255),
+                                                randint(0,255),
+                                                randint(0,255),
+                                                id_num)
+    return mac_addr
+        
+    
+
+def do_fork(parent_reader, domain, child_count):
     dom = conn.lookupByName(domain)
     defn = parseString(dom.XMLDesc(libvirt.VIR_DOMAIN_XML_SECURE))
     disk_from_filename = defn.getElementsByTagName("disk")[0].getElementsByTagName(
         "source")[0].getAttribute('file')
     uuid = dom.UUID()
-    nuu = uuid[:-1] + chr(child_count)
+    par_id = dom.ID()
+    nuu = chr(par_id + 1) + uuid[1:-1] + chr(child_count) # this is hackish, but hey.
 
     print "forking %s" % domain
     child_domname = "%s.%s" % (domain, child_count)
@@ -63,7 +76,7 @@ def do_fork(parent_reader, str_command, child_count):
         "source")[0].getAttribute("path")
     
     child_reader = DomainReader(tty_filename, child_domname)
-    child_reader.write_to("child-forked\n")
+    child_reader.write_to("child-forked %s\n" % get_mac_from_id(child.ID()))
 
 def main():
     # add all the currently open domain readers!
