@@ -1,5 +1,4 @@
 import libvirt
-import shutil
 import subprocess
 from xml.dom.minidom import parseString
 from random import randint
