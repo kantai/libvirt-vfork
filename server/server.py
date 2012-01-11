@@ -7,12 +7,15 @@ import os
 conn = libvirt.open(None)
 
 class DomainReader(object):
-    def __init__(self, tty_fname, domain_name):
+    def __init__(self, tty_fname, domain_name, parent_callback):
         self.tty_fname = tty_fname
         self.fd = os.open(tty_fname, os.O_RDWR)
         self.file = os.fdopen(self.fd, "r+")
         self.dom = domain_name
         self.children_counter = 0
+        self.ip = None
+        self.parent_callback = parent_callback
+
         from twisted.internet import reactor
         reactor.addReader(self)
     def write_to(self, message):
@@ -23,12 +26,16 @@ class DomainReader(object):
     def connectionLost(self, reason):
         pass
     def doRead(self):
-        print "doRead called on %s" % self.tty_fname
         cmd = self.file.readline().strip()
-        print cmd
         if cmd.startswith('fork'):
             self.children_counter += 1
             do_fork(self, self.dom, self.children_counter)
+        elif cmd.startswith('notify-ip'):
+            args = cmd.split(' ')
+            self.ip = args[1]
+            if self.parent_callback is not None:
+                self.parent_callback(self.ip)
+                self.parent_callback = None
     def logPrefix(self):
         return "reader"
 
@@ -67,15 +74,17 @@ def do_fork(parent_reader, domain, child_count):
     conn.restore(livesave_filename)
     print "scribbling..."
 
-    parent_reader.write_to("parent-forked\n")
-
     child = conn.lookupByUUID(nuu)
     defn = parseString(child.XMLDesc(libvirt.VIR_DOMAIN_XML_SECURE))
     tty_filename = defn.getElementsByTagName("serial")[0].getElementsByTagName(
         "source")[0].getAttribute("path")
+
+    def parent_callback(child_ip):
+        parent_reader.write_to("parent-forked %s\n" % child_ip)
     
-    child_reader = DomainReader(tty_filename, child_domname)
+    child_reader = DomainReader(tty_filename, child_domname, parent_callback)
     child_reader.write_to("child-forked %s\n" % get_mac_from_id(child.ID()))
+
 
 def main():
     # add all the currently open domain readers!
@@ -86,7 +95,7 @@ def main():
         tty_filename = defn.getElementsByTagName("serial")[0].getElementsByTagName(
             "source")[0].getAttribute("path")
         dom_name = dom.name()
-        DomainReader(tty_filename, dom_name)
+        DomainReader(tty_filename, dom_name, None)
     from twisted.internet import reactor
     reactor.run()
 
