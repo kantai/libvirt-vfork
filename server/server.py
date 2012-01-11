@@ -34,6 +34,7 @@ class DomainReader(object):
             args = cmd.split(' ')
             self.ip = args[1]
             if self.parent_callback is not None:
+                print "notifying parent..."
                 self.parent_callback(self.ip)
                 self.parent_callback = None
     def logPrefix(self):
@@ -84,6 +85,8 @@ def do_fork(parent_reader, domain, child_count):
     
     child_reader = DomainReader(tty_filename, child_domname, parent_callback)
     child_reader.write_to("child-forked %s\n" % get_mac_from_id(child.ID()))
+    
+    print "child acquiring new ip..."
 
 
 def main():

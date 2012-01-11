@@ -25,7 +25,9 @@ def do_fork():
         ip = get_ip()
         file.write("notify-ip %s\n" % ip) 
         file.flush()
-        ret = (ret, ip)
+        return (ret, ip)
+    elif ret.startswith('parent'):
+        return (ret, ret.split(" ")[1])
     return ret
 
 if __name__ == "__main__":
