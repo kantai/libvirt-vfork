@@ -51,6 +51,7 @@ def do_interactive(oracle_ip, port):
 def set_us_up_the_bomb():
     result,ipaddr = fork.do_fork()
     if result.startswith('parent'):
+        print "fork finished... trying to open %s" % ipaddr
         do_interactive(ipaddr,port=8500)
     else:
         startup_crypto_oracle(ipaddr,port=8500)
