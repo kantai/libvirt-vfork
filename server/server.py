@@ -1,4 +1,5 @@
 import libvirt
+import time
 import subprocess
 from xml.dom.minidom import parseString
 from random import randint
@@ -61,7 +62,7 @@ def do_fork(parent_reader, domain, child_count):
     uuid = dom.UUID()
     par_id = dom.ID()
     nuu = chr(par_id + 1) + uuid[1:-1] + chr(child_count) # this is hackish, but hey.
-
+    timef0 = time.time()
     print "forking %s" % domain
     child_domname = "%s.%s" % (domain, child_count)
 
@@ -69,18 +70,29 @@ def do_fork(parent_reader, domain, child_count):
     disk_to_filename = "/tmp/disk-%s" % child_domname
 
     dom.liveSave(livesave_filename, nuu, child_domname, disk_to_filename)
+    timef1 = time.time()
+    print "%s ms to dump" % ((timef1-timef0)*1000)
     print "copying..."
+    timef0 = time.time()
     subprocess.call(['qemu-img','create','-f', 'qcow2', '-b',disk_from_filename,disk_to_filename])
+    timef1 = time.time()
+    print "%s ms to clone disk" % ((timef1-timef0)*1000)
     print "restoring..."
+    timef0 = time.time()
     conn.restore(livesave_filename)
+    timef1 = time.time()
+    print "%s ms to start new vm" % ((timef1-timef0)*1000)
     print "scribbling..."
-
+    
+    timef0 = time.time()
     child = conn.lookupByUUID(nuu)
     defn = parseString(child.XMLDesc(libvirt.VIR_DOMAIN_XML_SECURE))
     tty_filename = defn.getElementsByTagName("serial")[0].getElementsByTagName(
         "source")[0].getAttribute("path")
 
     def parent_callback(child_ip):
+        timef1 = time.time()
+        print "%s ms to acquire IP" % ((timef1-timef0)*1000)
         parent_reader.write_to("parent-forked %s\n" % child_ip)
     
     child_reader = DomainReader(tty_filename, child_domname, parent_callback)

