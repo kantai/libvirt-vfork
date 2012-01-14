@@ -3,6 +3,7 @@ import httplib
 import subprocess
 import urlparse
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+import cherrypy
 
 existential_purpose = None
 
@@ -14,6 +15,22 @@ def send_request(ip, path):
     conn.request("GET", path)
     r1 = conn.getresponse()
     return r1.read()
+
+class CherryRouter(object):
+    def A(self):
+        return send_request(ipA, "/A")
+    def B(self):
+        return send_request(ipB, "/B")
+    A.exposed = True
+    B.exposed = True
+class CherryA(object):
+    def A(self):
+        return "You reached page A!"
+    A.exposed = True
+class CherryB(object):
+    def B(self):
+        return "You reached page B!"
+    B.exposed = True
 
 class SillyHandler(BaseHTTPRequestHandler):
     def send_OK_headers(self):
@@ -48,9 +65,15 @@ class SillyHandler(BaseHTTPRequestHandler):
 
 def do_server():
     print "Setting up httpd for %s " % existential_purpose
-    server_address = ('', 80)
-    httpd = HTTPServer(server_address, SillyHandler)
-    httpd.serve_forever()
+    if existential_purpose == "TO_ROUTE":
+        s = CherryRouter()
+    elif existential_purpose == "TO_OUTPUT_A":
+        s = CherryA()
+    elif existential_purpose == "TO_OUTPUT_B":
+        s = CherryB()
+    cherrypy.server.socket_host = "0.0.0.0"
+    cherrypy.server.socket_port = 80
+    cherrypy.quickstart(s)
 
 def do_set_us_up_the_bomb():
     global existential_purpose, ipA, ipB
